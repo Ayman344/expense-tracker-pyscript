@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PyExpense — Expense Tracker (PyScript)</title>
+  <meta name="description" content="A budget and expense tracker written in Python and running in the browser with PyScript." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://pyscript.net/releases/2025.7.3/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2025.7.3/core.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="logo">Py<span>Expense</span></div>
+      <div class="subtitle">A Python expense tracker running in your browser with PyScript</div>
+    </div>
+  </header>
+
+  <!-- Loading splash shown until Python is ready -->
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading Python runtime…</p>
+  </div>
+
+  <main class="wrap app" id="app" hidden>
+    <!-- ===== Summary dashboard (F2) ===== -->
+    <section class="stats">
+      <div class="stat">
+        <span class="stat-label">Balance</span>
+        <span class="stat-value" id="stat-balance">$0.00</span>
+      </div>
+      <div class="stat income">
+        <span class="stat-label">Income</span>
+        <span class="stat-value" id="stat-income">$0.00</span>
+      </div>
+      <div class="stat expense">
+        <span class="stat-label">Expenses</span>
+        <span class="stat-value" id="stat-expense">$0.00</span>
+      </div>
+    </section>
+
+    <div class="columns">
+      <!-- ===== Add / edit form (F1) ===== -->
+      <section class="panel">
+        <h2 id="form-title">Add transaction</h2>
+        <form id="tx-form" autocomplete="off">
+          <input type="hidden" id="edit-id" value="" />
+          <label>Description
+            <input type="text" id="desc" placeholder="e.g. Groceries" required />
+          </label>
+          <label>Amount (USD)
+            <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required />
+          </label>
+          <div class="two">
+            <label>Type
+              <select id="type">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </label>
+            <label>Category
+              <select id="category">
+                <option>Food</option>
+                <option>Housing</option>
+                <option>Transport</option>
+                <option>Utilities</option>
+                <option>Health</option>
+                <option>Entertainment</option>
+                <option>Salary</option>
+                <option>Other</option>
+              </select>
+            </label>
+          </div>
+          <label>Date
+            <input type="date" id="date" required />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submit-btn">Add</button>
+            <button type="button" class="btn" id="cancel-btn" hidden>Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== Category breakdown chart (F2) ===== -->
+      <section class="panel">
+        <h2>Spending by category</h2>
+        <div id="chart" class="chart"><p class="empty">No expenses yet.</p></div>
+      </section>
+    </div>
+
+    <!-- ===== Filters + export (F3) ===== -->
+    <section class="panel">
+      <div class="list-head">
+        <h2>Transactions</h2>
+        <div class="filters">
+          <select id="filter-month" class="filter" title="Filter by month"><option value="all">All months</option></select>
+          <select id="filter-category" class="filter" title="Filter by category">
+            <option value="all">All categories</option>
+            <option>Food</option><option>Housing</option><option>Transport</option>
+            <option>Utilities</option><option>Health</option><option>Entertainment</option>
+            <option>Salary</option><option>Other</option>
+          </select>
+          <button type="button" class="btn" id="export-btn">Export CSV</button>
+        </div>
+      </div>
+      <ul id="tx-list" class="tx-list"></ul>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <span>Built with Python + PyScript. Data is stored locally in your browser.</span>
+    <a href="https://github.com/Ayman344/expense-tracker-pyscript" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+
+  <script type="py" src="./main.py"></script>
+</body>
+</html>
