@@ -22,11 +22,22 @@ code here is my own — I used the reference only to define comparable scope, no
 ## Major features
 1. **Transaction management** — add, **edit**, and delete income and expense entries, each
    with a description, amount, type, category, and date.
-2. **Summary dashboard** — a live balance with total income and total expenses, plus a
-   **spending-by-category** bar chart that updates as data changes.
+2. **Dashboard** — balance, income, and expense cards, a **spending-by-category** chart,
+   and the latest transactions, with its own period selector.
 3. **Persistence, filtering & export** — transactions are saved to `localStorage` and
    survive reloads; the list can be **filtered by month and category**, and the current
    view can be **exported to CSV**.
+4. **Modern interface** — sidebar navigation, **light / dark theme** (remembered between
+   visits), and a responsive layout that works on phones.
+
+## Design and feature references
+- **UI design:** [shadcn/ui](https://github.com/shadcn-ui/ui) (MIT). shadcn/ui is built for
+  React + Tailwind; PyExpense re-creates its *design concept* — the neutral "zinc" theme,
+  CSS-variable design tokens, cards, buttons, badges, tables, and the sidebar/dashboard
+  layout — in plain CSS, so the app stays buildless. No shadcn/ui code is copied.
+- **Feature ideas:** [Actual Budget](https://github.com/actualbudget/actual) (MIT) — a
+  local-first personal finance app. PyExpense follows the same local-first idea (your data
+  stays in your browser) and takes inspiration from its budgets and schedules.
 
 ## Tech stack
 - **Python** (application logic) via **PyScript / Pyodide** (`2025.7.3`)
@@ -44,7 +55,8 @@ python -m http.server 8000
 
 ## AI tools used
 This project was developed with the help of AI coding tools:
-- **Claude Code** (Anthropic), model **Claude Opus 4.8**
+- **Claude Code** (Anthropic) — model **Claude Opus 4.8** (initial version, Assignment 1)
+- **Claude Code** (Anthropic) — model **Claude Opus 5.5** (Sprint 1: UI redesign, recurring transactions, budgets)
 
 ## Author
 Ayman Sajjad Akash — https://github.com/Ayman344
