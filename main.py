@@ -13,6 +13,9 @@ Features:
                                     and CSV export.
   F4  Recurring transactions ...... weekly/monthly rules that add entries
                                     automatically when due (issue #4).
+  F5  Monthly budget goals ........ per-category monthly limits with progress
+                                    bars, dashboard alerts, and a message when
+                                    an expense crosses 80% or 100% (issue #5).
   UI  Sidebar navigation, light/dark theme toggle, responsive layout.
 """
 
@@ -28,11 +31,14 @@ import core
 STORAGE_KEY = "pyexpense.transactions"
 THEME_KEY = "pyexpense.theme"
 RECURRING_KEY = "pyexpense.recurring"
+BUDGET_KEY = "pyexpense.budgets"
+EXPENSE_CATEGORIES = ["Food", "Housing", "Transport", "Utilities", "Health", "Entertainment", "Other"]
 
 VIEW_TITLES = {
     "dashboard": "Dashboard",
     "transactions": "Transactions",
     "recurring": "Recurring",
+    "budgets": "Budgets",
 }
 
 # ----------------------------------------------------------------------------
@@ -79,6 +85,36 @@ def load_rules():
 
 def save_rules():
     window.localStorage.setItem(RECURRING_KEY, json.dumps(rules))
+
+
+# Budgets (issue #5) -----------------------------------------------------------
+budgets = {}               # {category: monthly limit}
+
+
+def load_budgets():
+    global budgets
+    raw = window.localStorage.getItem(BUDGET_KEY)
+    try:
+        budgets = json.loads(raw) if raw else {}
+    except Exception:
+        budgets = {}
+
+
+def save_budgets():
+    window.localStorage.setItem(BUDGET_KEY, json.dumps(budgets))
+
+
+def this_month():
+    return date.today().isoformat()[:7]
+
+
+MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
+               "August", "September", "October", "November", "December"]
+
+
+def month_name(month):
+    year, mon = month.split("-")
+    return f"{MONTH_NAMES[int(mon) - 1]} {year}"
 
 
 def generate_due():
@@ -302,12 +338,106 @@ def render_rules():
     body.innerHTML = "".join(items)
 
 
+# ----------------------------------------------------------------------------
+# Rendering — Budgets + alerts (issue #5)
+# ----------------------------------------------------------------------------
+STATUS_TEXT = {"ok": "On track", "warning": "Near limit", "over": "Over budget", "none": ""}
+
+
+def render_budgets():
+    select = q("#budget-month")
+    keep = select.value or this_month()
+    months = sorted(set(all_months()) | {this_month()}, reverse=True)
+    select.innerHTML = "".join(f'<option value="{m}">{month_name(m)}</option>' for m in months)
+    select.value = keep if keep in months else this_month()
+    month = select.value
+
+    spent = core.month_spent(transactions, month)
+    rows = []
+    total_budget = 0
+    total_spent = 0
+    for cat in EXPENSE_CATEGORIES:
+        budget = budgets.get(cat)
+        cat_spent = spent.get(cat, 0)
+        status = core.budget_status(cat_spent, budget)
+        value = f"{budget:g}" if budget else ""
+        if budget:
+            total_budget += budget
+            total_spent += cat_spent
+            pct = cat_spent / budget * 100
+            remaining = budget - cat_spent
+            rem_cls = "text-over" if remaining < 0 else ""
+            remaining_html = f'<span class="{rem_cls}">{money(remaining)}</span>'
+            bar = (f'<div class="budget-cell" title="{STATUS_TEXT[status]}">'
+                   f'<div class="progress"><span class="{status}" style="width:{min(pct, 100):.1f}%"></span></div>'
+                   f'<span class="budget-pct">{pct:.0f}%</span></div>')
+        else:
+            remaining_html = '<span class="r-sub">—</span>'
+            bar = '<span class="r-sub">No budget set</span>'
+        rows.append(
+            '<tr>'
+            f'<td>{cat}</td>'
+            f'<td><input class="input" type="number" min="0" step="1" placeholder="Set limit" '
+            f'value="{value}" data-budget-cat="{cat}" aria-label="{cat} monthly budget" /></td>'
+            f'<td class="num">{money(cat_spent)}</td>'
+            f'<td class="num">{remaining_html}</td>'
+            f'<td>{bar}</td>'
+            '</tr>'
+        )
+    q("#budget-list").innerHTML = "".join(rows)
+    if total_budget:
+        q("#budget-total").innerText = (
+            f"Total budgeted: {money(total_budget)} · spent in those categories: {money(total_spent)}")
+    else:
+        q("#budget-total").innerText = "Tip: type an amount in the Budget column to set a monthly limit."
+
+
+ALERT_ICON = ('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" '
+              'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+              '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/>'
+              '<path d="M12 9v4M12 17h.01"/></svg>')
+
+
+def render_alerts():
+    box = q("#budget-alerts")
+    month = this_month()
+    alerts = core.budget_alerts(transactions, budgets, month)
+    if not alerts:
+        box.innerHTML = ""
+        return
+    worst = alerts[0][3]
+    parts = []
+    for cat, cat_spent, budget, status in alerts:
+        parts.append(f"{escape(cat)} at {cat_spent / budget * 100:.0f}% "
+                     f"({money(cat_spent)} of {money(budget)})")
+    title = "Over budget" if worst == "over" else "Approaching budget limit"
+    details = "; ".join(parts)
+    box.innerHTML = (
+        f'<div class="alert alert-{worst}" role="alert">{ALERT_ICON}'
+        f'<div class="alert-title">{title} — {month_name(month)}</div>'
+        f'<div class="alert-desc">{details}. '
+        '<button type="button" class="alert-link" data-nav="budgets">Review budgets</button></div>'
+        '</div>'
+    )
+
+
+def show_toast(status, category, spent, budget):
+    title = "Over budget" if status == "over" else "Approaching limit"
+    q("#toast").innerHTML = (
+        f'<div class="toast {status}" role="status"><strong>{title}: {escape(category)}</strong>'
+        f'<span>{money(spent)} of {money(budget)} spent this month '
+        f'({spent / budget * 100:.0f}%).</span></div>'
+    )
+
+
 def render_all():
     fill_month_select("#dash-month", "All time")
     fill_month_select("#filter-month", "All months")
     render_dashboard()
     render_table()
     render_rules()
+    render_budgets()
+    render_alerts()
 
 
 # ----------------------------------------------------------------------------
@@ -411,6 +541,9 @@ def on_submit(event):
         "date": q("#date").value or date.today().isoformat(),
     }
 
+    month, cat = entry["date"][:7], entry["category"]
+    spent_before = core.month_spent(transactions, month).get(cat, 0)
+
     edit_id = q("#edit-id").value
     if edit_id:
         for t in transactions:
@@ -425,6 +558,12 @@ def on_submit(event):
     save_transactions()
     reset_form()
     render_all()
+
+    if entry["type"] == "expense" and month == this_month():
+        spent_after = core.month_spent(transactions, month).get(cat, 0)
+        crossed = core.crossed_threshold(spent_before, spent_after, budgets.get(cat))
+        if crossed:
+            show_toast(crossed, cat, spent_after, budgets[cat])
 
 
 @when("click", "#cancel-btn")
@@ -546,10 +685,37 @@ def on_rule_list_click(event):
 
 
 # ----------------------------------------------------------------------------
+# Budgets: edit limits, change month  (issue #5)
+# ----------------------------------------------------------------------------
+@when("change", "#budget-list")
+def on_budget_change(event):
+    cat = event.target.dataset.budgetCat
+    if not cat:
+        return
+    try:
+        value = round(float(event.target.value), 2)
+    except (TypeError, ValueError):
+        value = 0
+    if value > 0:
+        budgets[cat] = value
+    else:
+        budgets.pop(cat, None)
+    save_budgets()
+    render_budgets()
+    render_alerts()
+
+
+@when("change", "#budget-month")
+def on_budget_month(event):
+    render_budgets()
+
+
+# ----------------------------------------------------------------------------
 # Boot
 # ----------------------------------------------------------------------------
 load_transactions()
 load_rules()
+load_budgets()
 generate_due()
 q("#rule-start").value = date.today().isoformat()
 apply_theme(current_theme())

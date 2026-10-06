@@ -73,5 +73,41 @@ class TestNextDue(unittest.TestCase):
         self.assertEqual(core.next_due(rule, date(2026, 10, 5)), "2026-12-01")
 
 
+def tx(cat, amount, day, kind="expense"):
+    return {"category": cat, "amount": amount, "date": day, "type": kind}
+
+
+class TestBudgets(unittest.TestCase):
+    def test_month_spent_filters_month_and_type(self):
+        rows = [tx("Food", 50, "2026-10-01"), tx("Food", 25.5, "2026-10-20"),
+                tx("Food", 99, "2026-09-30"), tx("Salary", 3000, "2026-10-01", "income")]
+        self.assertEqual(core.month_spent(rows, "2026-10"), {"Food": 75.5})
+
+    def test_status_thresholds(self):
+        self.assertEqual(core.budget_status(79.99, 100), "ok")
+        self.assertEqual(core.budget_status(80, 100), "warning")
+        self.assertEqual(core.budget_status(100, 100), "warning")
+        self.assertEqual(core.budget_status(100.01, 100), "over")
+
+    def test_no_or_zero_budget(self):
+        self.assertEqual(core.budget_status(50, None), "none")
+        self.assertEqual(core.budget_status(50, 0), "none")
+
+    def test_alerts_worst_first(self):
+        rows = [tx("Food", 120, "2026-10-02"), tx("Transport", 85, "2026-10-03"),
+                tx("Health", 10, "2026-10-04")]
+        budgets = {"Food": 100, "Transport": 100, "Health": 100}
+        alerts = core.budget_alerts(rows, budgets, "2026-10")
+        self.assertEqual([a[0] for a in alerts], ["Food", "Transport"])
+        self.assertEqual([a[3] for a in alerts], ["over", "warning"])
+
+    def test_crossed_threshold(self):
+        self.assertEqual(core.crossed_threshold(70, 85, 100), "warning")
+        self.assertEqual(core.crossed_threshold(85, 110, 100), "over")
+        self.assertIsNone(core.crossed_threshold(85, 90, 100))   # still warning
+        self.assertIsNone(core.crossed_threshold(10, 20, 100))   # still ok
+        self.assertIsNone(core.crossed_threshold(10, 200, 0))    # no budget
+
+
 if __name__ == "__main__":
     unittest.main()
