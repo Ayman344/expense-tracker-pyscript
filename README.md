@@ -30,7 +30,11 @@ code here is my own — I used the reference only to define comparable scope, no
 4. **Recurring transactions** — create weekly or monthly rules (e.g. rent, salary). Due
    entries are added automatically — including any missed since the start date — and
    are marked with a "↻ recurring" badge. No duplicates on reload.
-5. **Modern interface** — sidebar navigation, **light / dark theme** (remembered between
+5. **Monthly budget goals with alerts** — set a monthly limit per expense category and track
+   it with progress bars (green → amber at 80% → red when over). The dashboard shows an
+   alert for categories near or over their limit, and a message pops up when a new expense
+   crosses 80% or 100%.
+6. **Modern interface** — sidebar navigation, **light / dark theme** (remembered between
    visits), and a responsive layout that works on phones.
 
 ## Design and feature references
@@ -48,7 +52,7 @@ code here is my own — I used the reference only to define comparable scope, no
 - **GitHub Pages** for hosting
 
 ## Tests
-Pure logic (recurrence dates, etc.) lives in `core.py`, which has no browser code, so it
+Pure logic (recurrence dates, budget status) lives in `core.py`, which has no browser code, so it
 can be tested with plain Python:
 
 ```bash
