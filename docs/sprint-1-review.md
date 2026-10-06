@@ -39,7 +39,6 @@ Every commit references its issue number (e.g. `(#4)`), and every PR body refere
 This sprint was **human-led and AI-assisted**. I set the direction, made the decisions, and reviewed every step; **Claude Code** (Anthropic, model **Claude Opus 5.5**) did most of the hands-on work under that direction.
 
 ### Planning — led by me
-- **Started the sprint:** gave Claude Code the assignment and the course slides (Agile and Plan-driven Software Development) and asked it to explain *what, why, and how* for every step, so I could learn the process while doing it.
 - **Set the working rules** in a project instructions file (`CLAUDE.md`): plain step-by-step replies, a progress map in every reply, ask instead of assuming, and confirm before any public action.
 - **Chose the sprint content:** proposed a new UI-improvement item based on an open-source GitHub design, picked #4 (recurring transactions) and #5 (budget goals), and decided to fold the theme toggle (#3) into the UI work.
 - **Chose the references:** compared three open-source dashboards with live demos (Actual Budget, TailAdmin, Mosaic) and picked Actual Budget. During plan review I **revised** this: shadcn/ui for the UI design and Actual Budget for feature ideas only, and had the UI part re-planned.
