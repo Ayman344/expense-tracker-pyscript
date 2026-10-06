@@ -27,7 +27,10 @@ code here is my own — I used the reference only to define comparable scope, no
 3. **Persistence, filtering & export** — transactions are saved to `localStorage` and
    survive reloads; the list can be **filtered by month and category**, and the current
    view can be **exported to CSV**.
-4. **Modern interface** — sidebar navigation, **light / dark theme** (remembered between
+4. **Recurring transactions** — create weekly or monthly rules (e.g. rent, salary). Due
+   entries are added automatically — including any missed since the start date — and
+   are marked with a "↻ recurring" badge. No duplicates on reload.
+5. **Modern interface** — sidebar navigation, **light / dark theme** (remembered between
    visits), and a responsive layout that works on phones.
 
 ## Design and feature references
@@ -43,6 +46,14 @@ code here is my own — I used the reference only to define comparable scope, no
 - **Python** (application logic) via **PyScript / Pyodide** (`2025.7.3`)
 - Plain **HTML** and **CSS** — no framework, no build step
 - **GitHub Pages** for hosting
+
+## Tests
+Pure logic (recurrence dates, etc.) lives in `core.py`, which has no browser code, so it
+can be tested with plain Python:
+
+```bash
+python -m unittest discover tests
+```
 
 ## Run locally
 PyScript loads its Python source over HTTP, so open the folder with a local server rather

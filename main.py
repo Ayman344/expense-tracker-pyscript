@@ -11,6 +11,8 @@ Features:
                                     recent transactions.
   F3  Persistence & tools ........ localStorage saving, month/category filters,
                                     and CSV export.
+  F4  Recurring transactions ...... weekly/monthly rules that add entries
+                                    automatically when due (issue #4).
   UI  Sidebar navigation, light/dark theme toggle, responsive layout.
 """
 
@@ -21,12 +23,16 @@ from urllib.parse import quote
 
 from pyscript import document, window, when
 
+import core
+
 STORAGE_KEY = "pyexpense.transactions"
 THEME_KEY = "pyexpense.theme"
+RECURRING_KEY = "pyexpense.recurring"
 
 VIEW_TITLES = {
     "dashboard": "Dashboard",
     "transactions": "Transactions",
+    "recurring": "Recurring",
 }
 
 # ----------------------------------------------------------------------------
@@ -52,6 +58,55 @@ def load_transactions():
 def save_transactions():
     """Persist transactions to localStorage as JSON."""
     window.localStorage.setItem(STORAGE_KEY, json.dumps(transactions))
+
+
+# Recurring rules (issue #4) ----------------------------------------------------
+rules = []                 # list of rule dicts
+next_rule_id = 1
+
+
+def load_rules():
+    global rules, next_rule_id
+    raw = window.localStorage.getItem(RECURRING_KEY)
+    if raw:
+        try:
+            rules = json.loads(raw)
+        except Exception:
+            rules = []
+    if rules:
+        next_rule_id = max(r["id"] for r in rules) + 1
+
+
+def save_rules():
+    window.localStorage.setItem(RECURRING_KEY, json.dumps(rules))
+
+
+def generate_due():
+    """Create transactions for every rule occurrence that is due (up to today)
+    and not yet generated. Returns how many transactions were added."""
+    global next_id
+    today = date.today()
+    added = 0
+    for rule in rules:
+        due = core.due_occurrences(rule, today)
+        for day in due:
+            transactions.append({
+                "id": next_id,
+                "desc": rule["desc"],
+                "amount": rule["amount"],
+                "type": rule["type"],
+                "category": rule["category"],
+                "date": day,
+                "rule_id": rule["id"],
+            })
+            next_id += 1
+            added += 1
+        if due:
+            rule["last_generated"] = due[-1]
+    if added:
+        save_transactions()
+        save_rules()
+    return added
 
 
 # ----------------------------------------------------------------------------
@@ -201,7 +256,7 @@ def render_table():
         items.append(
             '<tr>'
             f'<td>{t["date"]}</td>'
-            f'<td>{escape(t["desc"])}</td>'
+            f'<td>{escape(t["desc"])}{recurring_badge(t)}</td>'
             f'<td><span class="badge {badge}">{escape(t["category"])}</span></td>'
             f'<td class="num {cls}">{money(signed(t))}</td>'
             '<td><div class="row-actions">'
@@ -213,11 +268,46 @@ def render_table():
     body.innerHTML = "".join(items)
 
 
+def recurring_badge(t):
+    if t.get("rule_id"):
+        return '<span class="badge badge-outline badge-recurring" title="Added by a recurring rule">&#8635; recurring</span>'
+    return ""
+
+
+# ----------------------------------------------------------------------------
+# Rendering — Recurring rules (issue #4)
+# ----------------------------------------------------------------------------
+def render_rules():
+    q("#rule-count").innerText = plural(len(rules), "rule")
+    body = q("#rule-list")
+    if not rules:
+        body.innerHTML = '<tr class="empty-row"><td colspan="5">No recurring rules yet.</td></tr>'
+        return
+    today = date.today()
+    items = []
+    for r in sorted(rules, key=lambda r: core.next_due(r, today) or ""):
+        cls = "amt-income" if r["type"] == "income" else "amt-expense"
+        amount = r["amount"] if r["type"] == "income" else -r["amount"]
+        items.append(
+            '<tr>'
+            f'<td>{escape(r["desc"])}<div class="r-sub">{escape(r["category"])}</div></td>'
+            f'<td><span class="badge badge-outline">{r["frequency"].capitalize()}</span></td>'
+            f'<td>{core.next_due(r, today) or "—"}</td>'
+            f'<td class="num {cls}">{money(amount)}</td>'
+            '<td><div class="row-actions">'
+            f'<button type="button" class="btn btn-ghost icon-btn danger" data-rule-delete="{r["id"]}" title="Delete rule">&#10005;</button>'
+            '</div></td>'
+            '</tr>'
+        )
+    body.innerHTML = "".join(items)
+
+
 def render_all():
     fill_month_select("#dash-month", "All time")
     fill_month_select("#filter-month", "All months")
     render_dashboard()
     render_table()
+    render_rules()
 
 
 # ----------------------------------------------------------------------------
@@ -404,9 +494,64 @@ def on_export(event):
 
 
 # ----------------------------------------------------------------------------
+# Recurring rules: add / delete  (issue #4)
+# ----------------------------------------------------------------------------
+@when("submit", "#rule-form")
+def on_rule_submit(event):
+    global next_rule_id
+    event.preventDefault()
+    desc = q("#rule-desc").value.strip()
+    try:
+        amount = round(float(q("#rule-amount").value), 2)
+    except (TypeError, ValueError):
+        amount = 0.0
+    if not desc or amount <= 0:
+        window.alert("Please enter a description and a positive amount.")
+        return
+
+    rules.append({
+        "id": next_rule_id,
+        "desc": desc,
+        "amount": amount,
+        "type": q("#rule-type").value,
+        "category": q("#rule-category").value,
+        "frequency": q("#rule-frequency").value,
+        "start_date": q("#rule-start").value or date.today().isoformat(),
+        "last_generated": None,
+    })
+    next_rule_id += 1
+    save_rules()
+    added = generate_due()
+
+    q("#rule-form").reset()
+    q("#rule-start").value = date.today().isoformat()
+    q("#rule-note").innerText = (
+        f"Rule added. {plural(added, 'past entry', 'past entries')} created."
+        if added else "Rule added. The first entry will be created on its start date."
+    )
+    render_all()
+
+
+@when("click", "#rule-list")
+def on_rule_list_click(event):
+    global rules
+    btn = event.target.closest("button[data-rule-delete]")
+    if not btn:
+        return
+    rid = int(btn.dataset.ruleDelete)
+    rules = [r for r in rules if r["id"] != rid]
+    save_rules()                      # past transactions are kept
+    q("#rule-note").innerText = "Rule deleted. Entries already created are kept."
+    render_all()
+
+
+# ----------------------------------------------------------------------------
 # Boot
 # ----------------------------------------------------------------------------
 load_transactions()
+load_rules()
+generate_due()
+q("#rule-start").value = date.today().isoformat()
 apply_theme(current_theme())
 q("#date").value = date.today().isoformat()
 render_all()

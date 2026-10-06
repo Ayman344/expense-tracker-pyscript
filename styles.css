@@ -289,3 +289,7 @@ a { color: inherit; }
   .kpis, .grid-2 { grid-template-columns: 1fr; }
   .kpi-value { font-size: 24px; }
 }
+
+/* ---------- Recurring (issue #4) ---------- */
+.form-note { margin: 0; font-size: 13px; color: hsl(var(--muted-foreground)); min-height: 1em; }
+.badge-recurring { margin-left: 6px; font-size: 11px; padding: 0 6px; }
