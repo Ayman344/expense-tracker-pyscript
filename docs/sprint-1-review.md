@@ -36,12 +36,29 @@ Every commit references its issue number (e.g. `(#4)`), and every PR body refere
 - Each feature was checked in the browser against its acceptance criteria before the PR, and again on the live site after merge.
 
 ## How AI coding tools were used
-**Claude Code** (Anthropic, model **Claude Opus 5.5**) was used throughout the sprint, with me directing and reviewing:
-- **Research and design:** compared open-source references (Actual Budget, TailAdmin, Mosaic, shadcn/ui) and studied the shadcn/ui dashboard block before coding.
-- **Planning:** turned the Sprint Goal into acceptance criteria and a Definition of Done for each issue.
-- **Implementation:** wrote the HTML/CSS/Python for each feature, and wrote the `core.py` logic together with its unit tests first.
-- **Testing:** ran the unit tests and drove the app in a browser (adding transactions, rules, and budgets; checking reloads and the mobile layout).
-- **Workflow:** ran the Git/GitHub steps — feature branches, issue-referencing commits, pull requests, merges, milestone, and board updates through the `gh` CLI.
+This sprint was **human-led and AI-assisted**. I set the direction, made the decisions, and reviewed every step; **Claude Code** (Anthropic, model **Claude Opus 5.5**) did most of the hands-on work under that direction.
+
+### Planning — led by me
+- **Started the sprint:** gave Claude Code the assignment and the course slides (Agile and Plan-driven Software Development) and asked it to explain *what, why, and how* for every step, so I could learn the process while doing it.
+- **Set the working rules** in a project instructions file (`CLAUDE.md`): plain step-by-step replies, a progress map in every reply, ask instead of assuming, and confirm before any public action.
+- **Chose the sprint content:** proposed a new UI-improvement item based on an open-source GitHub design, picked #4 (recurring transactions) and #5 (budget goals), and decided to fold the theme toggle (#3) into the UI work.
+- **Chose the references:** compared three open-source dashboards with live demos (Actual Budget, TailAdmin, Mosaic) and picked Actual Budget. During plan review I **revised** this: shadcn/ui for the UI design and Actual Budget for feature ideas only, and had the UI part re-planned.
+- **Reviewed and approved the written sprint plan** — Sprint Goal, acceptance criteria per issue, Definition of Done, work order (#7 → #4 → #5), and verification steps — only after my revisions were in.
+- **Planning documents produced:**
+  - `Sprint-1-Plan.md` — the approved sprint plan with its revision history (v1 → v2 after my review → v3 scope correction).
+  - `CLAUDE.md` — requirements checklist, locked decisions, Definition of Done, progress checklist, and future backlog.
+  - On GitHub — the Sprint Goal in the milestone, acceptance criteria in issue #7, and test notes in each pull request.
+
+### Review and course correction — me
+- Reviewed each increment on the live site before the next issue started.
+- **Audited the sprint against the assignment checklist** mid-sprint and found that Sprint 1 contained an issue (#7) that was not from the Assignment 1 backlog. I chose the fix — move #3 into the milestone and keep #7 outside it — and approved renaming PR #8 so its title references #3.
+- Questioned how other people can use the app without installing PyScript; the answer exposed two risks (dependency on pyscript.net, data locked to one browser), which I added to the future backlog.
+
+### Hands-on work — Claude Code, under my direction
+- **Research:** found candidate open-source references with live demos and studied the shadcn/ui dashboard layout.
+- **Implementation:** wrote the HTML, CSS, and Python for each feature, writing the core logic in `core.py` and its unit tests first.
+- **Testing:** ran the 18 unit tests and drove the app in a browser (transactions, rules, budgets, reloads, mobile layout).
+- **Git/GitHub workflow:** created the feature branches, issue-referencing commits, pull requests, merges, milestone, and board updates with the `gh` CLI.
 
 ## Sprint Retrospective
 **One thing that went well:** The feature-branch → pull request → merge loop, with a clear Definition of Done, kept `main` always working. Each merge produced a usable increment on the live site, and putting the tricky logic in a tested `core.py` made the features reliable (e.g. Jan 31 → Feb 28 → Mar 31 for monthly rules).
