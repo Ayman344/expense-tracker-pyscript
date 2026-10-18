@@ -1,5 +1,7 @@
 # PyExpense — Expense Tracker (PyScript)
 
+[![Python application](https://github.com/Ayman344/expense-tracker-pyscript/actions/workflows/python-app.yml/badge.svg)](https://github.com/Ayman344/expense-tracker-pyscript/actions/workflows/python-app.yml)
+
 A small but functional **expense / budget tracker** written in **Python** and running
 entirely in the browser with **[PyScript](https://pyscript.net/)**. No backend and no
 build step — it is hosted as static files on GitHub Pages, and all data stays in the
@@ -51,13 +53,25 @@ code here is my own — I used the reference only to define comparable scope, no
 - Plain **HTML** and **CSS** — no framework, no build step
 - **GitHub Pages** for hosting
 
-## Tests
+## Tests & CI
 Pure logic (recurrence dates, budget status) lives in `core.py`, which has no browser code, so it
-can be tested with plain Python:
+can be tested with plain Python (`unittest`, standard library):
 
 ```bash
-python -m unittest discover tests
+python -m unittest discover -s tests
 ```
+
+Coverage (`pip install coverage`):
+
+```bash
+python -m coverage run --branch -m unittest discover -s tests
+python -m coverage report -m --include=core.py
+```
+
+**Continuous Integration:** every push and every pull request to `main` runs the GitHub Actions
+workflow [`.github/workflows/python-app.yml`](.github/workflows/python-app.yml) (based on GitHub's
+"Python application" starter): it byte-compiles all Python files (build) and runs the full test suite
+with coverage. A failing test turns the run red.
 
 ## Run locally
 PyScript loads its Python source over HTTP, so open the folder with a local server rather
