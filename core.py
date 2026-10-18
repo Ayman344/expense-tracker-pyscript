@@ -43,7 +43,7 @@ def due_occurrences(rule, today):
     due = []
     for n in range(_MAX_OCCURRENCES):
         occ = nth_occurrence(start, rule["frequency"], n)
-        if occ > today:
+        if occ >= today:
             break
         if last is None or occ > last:
             due.append(occ.isoformat())
